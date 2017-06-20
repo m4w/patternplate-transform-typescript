@@ -1,4 +1,4 @@
-import { dirname, join, resolve, relative } from 'path';
+import { dirname, join, resolve, relative, sep } from 'path';
 import * as ts from 'typescript';
 import { transpileModule, TranspileOutput } from './transpiler';
 import { Application, PatternplateConfiguration, PatterplateFile, TypeScriptTransform, DependencyMap } from './types';
@@ -15,8 +15,20 @@ function writeDeclaration(input: PatterplateFile, output: TranspileOutput, appli
       .reduce((source, local) => {
         const from = dirname(input.path);
         const remote = ((input.pattern.manifest.patterns || {}) as any)[local];
-        const to = join(relative(from, resolve(from, join('..', remote))), 'index');
+        const remoteDepth = remote.split(sep);
+        const relativeRemotePath = remoteDepth && remoteDepth.length ?
+          new Array(remoteDepth.length).fill('..').join('/') :
+          '..';
+        const to = join(relative(from, resolve(from, join(relativeRemotePath, remote))), 'index');
         let result = source;
+        console.log('#####################', 'writeDeclaration START #########################');
+        console.log('------', 'input.path', input.path, '+++++++');
+        console.log('------', 'local', local, '+++++++');
+        console.log('------', 'remote', remote, '+++++++');
+        console.log('------', 'depth', remoteDepth, '+++++++');
+        console.log('------', 'from', from, '+++++++');
+        console.log('------', 'resolve', resolve(from, join(relativeRemotePath, remote)), '+++++++');
+        console.log('------', 'to', to, '+++++++');
         while (true) {
           result = source
             // es2015 import
@@ -28,8 +40,10 @@ function writeDeclaration(input: PatterplateFile, output: TranspileOutput, appli
             .replace(new RegExp(`((?:var|const|let).*?=\\s+require\\s*\\(\\s*['"])${local}(['"]\\s*\\)\\s*;)`),
               `$1${to}$2`);
           if (result === source) {
+            console.log('#####################', 'writeDeclaration END #########################');
             return result;
           }
+          console.log('#####################', 'writeDeclaration END #########################');
           source = result;
         }
       }, output.declarationText);

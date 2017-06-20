@@ -161,7 +161,11 @@ function getDeclarationDiagnostics(program: ts.Program): ts.Diagnostic[] {
 export function resolveDependency(moduleName: string, containingFile: string, map: DependencyMap,
     patternRoot: string, options: ts.CompilerOptions): ts.ResolvedModule | undefined {
   // try patternplate demo Pattern dependency
+  console.log('#####', 'resolve Dependency START', '-----');
+  console.log('++++', containingFile, moduleName, '+++');
   if (moduleName === 'Pattern' && containingFile.endsWith('demo.tsx')) {
+    console.log('++++1', containingFile.replace('demo.tsx', 'index.tsx'), '++++');
+    console.log('#####', 'resolve Dependency END', '-----');
     return { resolvedFileName: containingFile.replace('demo.tsx', 'index.tsx') };
   }
 
@@ -172,6 +176,8 @@ export function resolveDependency(moduleName: string, containingFile: string, ma
     // try to resolve pattern.json defined pattern dependency
     if (pattern) {
       const resolvedFileName = path.join(patternRoot, pattern, 'index.tsx');
+      console.log('+++2', resolvedFileName, '++++');
+      console.log('#####', 'resolve Dependency END', '-----');
       return { resolvedFileName };
     }
   }
@@ -181,9 +187,12 @@ export function resolveDependency(moduleName: string, containingFile: string, ma
     const result = ts.resolveModuleName(moduleName, containingFile, options,
       { fileExists: ts.sys.fileExists, readFile: ts.sys.readFile });
     if (result && result.resolvedModule) {
+      console.log('++++3', result.resolvedModule, '++++');
+      console.log('#####', 'resolve Dependency END', '-----');
       return result.resolvedModule;
     }
   }
 
+  console.log('#####', 'resolve Dependency END', '-----');
   return undefined;
 }
