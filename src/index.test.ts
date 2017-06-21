@@ -191,3 +191,46 @@ test('writeDeclaration should rewrite multiple dependency paths on a best guess'
 
   t.deepEqual(application.resources[0].content, expected);
 });
+
+test('writeDeclaration should rewrite multiple and deeper dependency paths on a best guess', t => {
+  const expected = stripIndents`
+    import Type1 from '../dependency-folder/index';
+    import Type2 = require('../../package-two/second-folder/index');
+    const Type3 = require('../../package-two/another-folder/third-folder/index');
+    import Type4 from '../../package-three/another-folder/fourth-folder/index';
+  `;
+
+  const input = getFileMock(``);
+  input.path = '/tmp/patterns/package-one/input/index.tsx';
+  input.pattern.manifest.patterns = {
+    dependency: 'package-one/dependency-folder',
+    secondDependency: 'package-two/second-folder',
+    thirdDependency: 'package-two/another-folder/third-folder',
+    fourthDependency: 'package-three/another-folder/fourth-folder'
+  };
+  input.dependencies['dependency'] = getFileMock('', 'dependency-folder');
+  input.dependencies['dependency'].path = '/tmp/patterns/package-one/dependency-folder/index.tsx';
+  input.dependencies['secondDependency'] = getFileMock('', 'second-folder');
+  input.dependencies['secondDependency'].path = '/tmp/patterns/package-two/second-folder/index.tsx';
+  input.dependencies['thirdDependency'] = getFileMock('', 'third-folder');
+  input.dependencies['thirdDependency'].path = '/tmp/patterns/package-two/another-folder/third-folder/index.tsx';
+  input.dependencies['thirdDependency'] = getFileMock('', 'third-folder');
+  input.dependencies['thirdDependency'].path = '/tmp/patterns/package-three/another-folder/fourth-folder/index.tsx';
+  const application = getApplicationMock();
+  application.resources = [];
+  const output = {
+    status: 0,
+    outputText: '',
+    declarationText: stripIndents`
+      import Type1 from 'dependency';
+      import Type2 = require('secondDependency');
+      const Type3 = require('thirdDependency');
+      import Type4 from 'fourthDependency';
+    `
+  };
+
+  (createTypescriptTransform as any).writeDeclaration(input, output, application);
+  console.log(application.resources[0].content);
+
+  t.deepEqual(application.resources[0].content, expected);
+});
