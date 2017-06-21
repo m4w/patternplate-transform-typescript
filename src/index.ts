@@ -10,21 +10,29 @@ module.exports = function createTypescriptTransform(application: Application): T
 
 function writeDeclaration(input: PatterplateFile, output: TranspileOutput, application: Application): void {
   if (output.declarationText) {
-    const content = Object
-      .keys(input.pattern.manifest.patterns || {})
+    const patterns = Object
+      .keys(input.pattern.manifest.patterns || {});
+    let minDepth: number = -1;
+    patterns.forEach(pattern => {
+      const remote = ((input.pattern.manifest.patterns || {}) as any)[pattern];
+      const remoteDepth = remote.split(sep);
+      if (minDepth === -1 || remoteDepth.length < minDepth) {
+        minDepth = remoteDepth.length;
+      }
+    });
+    const content = patterns
       .reduce((source, local) => {
         const from = dirname(input.path);
         const remote = ((input.pattern.manifest.patterns || {}) as any)[local];
-        const remoteDepth = remote.split(sep);
-        const relativeRemotePath = remoteDepth && remoteDepth.length ?
-          new Array(remoteDepth.length).fill('..').join('/') :
-          '..';
+        const remoteDepth = remote ? Math.max(remote.split(sep).length - minDepth, 1) : 1;
+        const relativeRemotePath = new Array(remoteDepth).fill('..').join('/');
         const to = join(relative(from, resolve(from, join(relativeRemotePath, remote))), 'index');
         let result = source;
         console.log('#####################', 'writeDeclaration START #########################');
         console.log('------', 'input.path', input.path, '+++++++');
         console.log('------', 'local', local, '+++++++');
         console.log('------', 'remote', remote, '+++++++');
+        console.log('------', 'minDepth', minDepth, '+++++++');
         console.log('------', 'depth', remoteDepth, '+++++++');
         console.log('------', 'from', from, '+++++++');
         console.log('------', 'resolve', resolve(from, join(relativeRemotePath, remote)), '+++++++');
